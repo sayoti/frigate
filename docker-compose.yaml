@@ -1,0 +1,70 @@
+version: '3.6'
+services:
+  homeassistant:
+    container_name: homeassistant
+    image: "ghcr.io/home-assistant/home-assistant:stable"
+    volumes:
+      - ./homeassistant/config:/config
+      - /etc/localtime:/etc/localtime:ro
+      - /run/dbus:/run/dbus:ro
+    restart: unless-stopped
+    privileged: true
+    network_mode: host
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./portainer-data:/data
+    ports:
+      - 9000:9000
+  mosquitto:
+    image: eclipse-mosquitto
+    container_name: mosquitto
+    volumes:
+      - /opt/mosquitto:/mosquitto
+      - /opt/mosquitto/data:/mosquitto/data
+      - /opt/mosquitto/log:/mosquitto/log
+    ports:
+      - 1883:1883
+      - 9001:9001
+  go2rtc:
+    image: alexxit/go2rtc
+    privileged: true         # only for FFmpeg hardware transcoding
+    restart: unless-stopped  # autorestart on fail or config change from WebUI
+    environment:
+      - TZ=Asia/Makassar   # timezone in logs
+    volumes:
+      - ./go2rtc/config:/config   # folder for go2rtc.yaml file (edit from WebUI)
+    ports:
+      - 1984:1984
+  frigate:
+    container_name: frigate
+    privileged: true # this may not be necessary for all setups
+    restart: unless-stopped
+    image: ghcr.io/blakeblackshear/frigate:stable
+    shm_size: 64mb # update for your cameras based on calculation above
+    devices:
+      - /dev/bus/usb:/dev/bus/usb # passes the USB Coral, needs to be modified for other versions
+      - /dev/apex_0:/dev/apex_0 # passes a PCIe Coral, follow driver instructions here https://coral.ai/docs/m2/get-started/#2a-on-linux
+      - /dev/dri/renderD128 # for intel hwaccel, needs to be updated for your hardware
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./frigate/config/config.yml:/config/config.yml
+      - ./frigate/media:/media/frigate
+      - type: tmpfs # Optional: 1GB of memory, reduces SSD/SD Card wear
+        target: /tmp/cache
+        tmpfs:
+          size: 1000000000
+    ports:
+      - 5000:5000
+      - 8554:8554
+      - 8555:8555/tcp 
+      - 8555:8555/udp 
+    environment:
+      FRIGATE_RTSP_PASSWORD: "password"
+      TZ: Asia/Makassar

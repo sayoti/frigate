@@ -1,0 +1,194 @@
+ui:
+  live_mode: mse
+  timezone: Asia/Makassar
+  use_experimental: false
+  time_format: 24hour
+  date_style: short
+  time_style: medium
+  strftime_fmt: "%d/%m/%Y/ %H:%M"
+
+mqtt:
+  enabled: True
+  host: 172.18.0.3
+  port: 1883
+  topic_prefix: frigate
+  client_id: frigate
+  user: sayoti
+  password: solusiiot
+
+objects:
+  track:
+    - person
+  filters:
+    person:
+      min_area: 5000
+      max_area: 100000
+
+cameras:
+  office_cam:
+    ffmpeg:
+      output_args:
+        record: preset-record-generic-audio-copy
+      inputs:
+        - path: rtsp://admin:AFPWUQ@192.168.18.9:554/ # <--- the name here must match the name of the camera in restream
+          input_args: preset-rtsp-generic
+          roles:
+            - record
+            - detect
+    detect:
+      width: 640
+      height: 480
+      fps: 5
+      enabled: True
+      max_disappeared: 25
+      stationary:
+        interval: 0
+        threshold: 50
+    objects:
+      track:
+        - person
+      filters:
+        person:
+          min_area: 700
+          min_ratio: 0.5
+          max_ratio: 2.0
+          min_score: 0.4
+          threshold: 0.7
+    motion:
+      threshold: 20
+      contour_area: 15
+    record:
+      enabled: True
+      expire_interval: 30
+      retain:
+        days: 2
+      events:
+        pre_capture: 3
+        post_capture: 10
+        objects:
+          - person
+        retain:
+          default: 5
+          mode: motion
+    snapshots:
+      enabled: true
+      timestamp: true
+      bounding_box: true
+      crop: True
+      height: 500
+      retain:
+        default: 3
+    mqtt:
+      enabled: True
+      timestamp: True
+      bounding_box: True
+      crop: True
+      height: 270
+      quality: 70
+  office2_cam:
+    ffmpeg:
+      output_args:
+        record: preset-record-generic-audio-copy
+      inputs:
+        - path: rtsp://admin:GMICLZ@192.168.18.10:554/h.264 # <--- the name here must match the name of the camera in restream
+          input_args: preset-rtsp-generic
+          roles:
+            - record
+            - detect
+    detect:
+      width: 640
+      height: 480
+      fps: 5
+      enabled: True
+      max_disappeared: 25
+      stationary:
+        interval: 0
+        threshold: 50
+    objects:
+      track:
+        - person
+      filters:
+        person:
+          min_area: 700
+          min_ratio: 0.5
+          max_ratio: 2.0
+          min_score: 0.4
+          threshold: 0.7
+    motion:
+      mask:
+        - 640,0,282,0,0,0,481,331,483,480,640,480
+      threshold: 20
+      contour_area: 15
+    zones:
+      Front Door:
+        coordinates: 33,480,374,480,481,480,477,392,425,382,427,276,355,219,0,31,0,480
+        objects:
+          - person
+        filters:
+          person:
+            min_area: 700
+            threshold: 0.7
+    record:
+      enabled: True
+      expire_interval: 30
+      retain:
+        days: 2
+      events:
+        pre_capture: 1
+        post_capture: 5
+        objects:
+          - person
+        retain:
+          default: 3
+          mode: motion
+    snapshots:
+      enabled: true
+      clean_copy: false
+      timestamp: false
+      bounding_box: False
+      crop: False
+      height: 720
+      retain:
+        default: 3
+    mqtt:
+      enabled: True
+      timestamp: True
+      bounding_box: True
+      crop: True
+      height: 270
+      quality: 70
+
+rtmp:
+  enabled: false
+
+live:
+  height: 640
+  quality: 8
+
+timestamp_style:
+  position: "tl"
+  format: "%d/%m/%Y %H:%M:%S"
+  color:
+    red: 255
+    green: 255
+    blue: 255
+  thickness: 2
+  effect: shadow
+
+birdseye:
+  enabled: True
+  restream: False
+  width: 1280
+  height: 720
+  quality: 3
+  mode: objects
+
+detectors:
+  cpu1:
+    type: cpu
+  cpu2:
+    type: cpu
+  cpu3:
+    type: cpu
+  cpu4:
+    type: cpu
